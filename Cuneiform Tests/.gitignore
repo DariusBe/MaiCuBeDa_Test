@@ -1,1 +1,4 @@
 /MaiCuBeDa/
+/model_outputs/
+# but don't ignore csv files in /model_outputs/
+!echo "model_outputs/*.csv" >> .gitignore
