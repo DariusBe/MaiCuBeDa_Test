@@ -1,4 +1,7 @@
 /MaiCuBeDa/
 /imgset/
 **/.DS_Store
+*.zip
 /model_outputs/*.keras
+/model_outputs/*.h5
+/model_outputs/callbacks/*.keras
