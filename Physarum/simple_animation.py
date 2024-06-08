@@ -1,13 +1,15 @@
+from matplotlib.widgets import Slider
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # global variables:
-grid_size = 150
+grid_size = 250
 trail_decay = 0.9
+step_width = 1.0
 rotation_angle = 22.5
-sensor_angles = 45
-sensor_distances = 9 #9px
+sensor_angles = 45.0
+sensor_distances = 9.0
 
 
 # define numpy 2D Vector
@@ -21,30 +23,62 @@ class Physarum:
         self.position = position
         self.heading = heading
 
-# initialize the grid
-grid = np.zeros((grid_size, grid_size))
-grid[grid_size//2, grid_size//2] = 1
+    def rotate(self, rotation_angle):
+        # randomly around +/- rotation_angle
+        self.heading += np.random.uniform(-rotation_angle, rotation_angle)
+    
+    def move(self,step_width):
+        self.position.x += step_width * np.cos(np.radians(self.heading))
+        self.position.y += step_width * np.sin(np.radians(self.heading))
 
-def update(last_grid):
+
+
+# map position to grid
+def pos_to_grid(pos):
+    return int(pos.x), int(pos.y)
+
+grid = np.zeros((grid_size, grid_size))
+grid[grid_size//2, grid_size//2] = 0.000001
+
+# initialize the grid with some low values
+trail = np.random.normal(-0.25, 0.25, size=(grid_size, grid_size))
+# cut off the negative values
+trail = np.clip(trail, 0, 1)
+
+particles = []
+for i in range(1):
+    particles.append(Physarum(Vec2D(np.random.normal(scale=grid_size), np.random.normal(scale=grid_size)), np.random.randint(0, 360)))
+
+def update(last_grid, rotation_angle=rotation_angle, step_width=step_width):
     grid = last_grid.copy()
-    # Loop over all cells in the grid
-    for x in range(0, grid_size-1):
-        for y in range(0, grid_size-1):
-            if grid[x, y] == 1:
-                grid[max(x-1, 0), y] = 1
-                grid[x, y] = 0
+    # Loop over all cells in the grid and place one Physarum
+    for physarum in particles:
+        physarum.position.x = physarum.position.x % grid_size
+        physarum.position.y = physarum.position.y % grid_size
+        # Get the position of the Physarum in the grid
+        pos_x, pos_y = pos_to_grid(physarum.position)
+        grid[pos_x, pos_y] = 1
+        
+        physarum.rotate(rotation_angle)
+        physarum.move(step_width)
     return grid
 
 
-# Create the animation
+
 fig = plt.figure()
-im = plt.imshow(grid, cmap='gray', animated=True)
+im = plt.imshow(grid, cmap='terrain', animated=True)
+speed_slider = Slider(plt.axes([0.1, 0.01, 0.8, 0.03]), 'Physarum Step Width', 0.001, 10.0, valinit=step_width)
+rotation_slider = Slider(plt.axes([0.1, 0.05, 0.8, 0.03]), 'Physarum Rotation Angle', 0, 90, valinit=rotation_angle)
 def animate(*args):
     global grid
-    grid = update(grid)
+    global step_width
+    global rotation_angle
+    step_width = speed_slider.val
+    rotation_angle = rotation_slider.val
+    grid = update(grid, rotation_angle, step_width)
     im.set_array(grid)
     return im,
-ani = animation.FuncAnimation(fig, animate, interval=10, blit=True)
+ani = animation.FuncAnimation(fig, animate, interval=5, blit=True)
 plt.show()
 
 
