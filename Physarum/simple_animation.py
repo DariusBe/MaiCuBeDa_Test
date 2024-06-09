@@ -11,8 +11,7 @@ step_width = 1.0
 rotation_angle = 22.5
 sensor_angles = 45.0
 sensor_distances = 9.0
-physarum_count = 800
-
+physarum_count = 250
 
 # define numpy 2D Vector
 class Vec2D:
@@ -44,17 +43,11 @@ class Physarum:
     # is move possible?
     def can_move(self, position):
         # check if at future position, there is aleady a Physarum
-        future_pos = pos_to_grid(Vec2D(position.x + step_width * np.cos(np.radians(self.heading)), position.y + step_width * np.sin(np.radians(self.heading))))
+        future_pos = Vec2D(position.x + step_width * np.cos(np.radians(self.heading)), position.y + step_width * np.sin(np.radians(self.heading)))
+        future_pos = pos_to_grid(future_pos)
         if grid[future_pos] > 0:
             return False
         return True
-        
-# map position to grid
-def pos_to_grid(pos, grid_size=grid_size):
-    # make sure the position is within the grid
-    pos.x = min(max(0, pos.x), grid_size - 1)
-    pos.y = min(max(0, pos.y), grid_size - 1)
-    return int(pos.x), int(pos.y)
 
 grid = np.zeros((grid_size, grid_size))
 grid[grid_size//2, grid_size//2] = 0.000000001 
@@ -86,6 +79,10 @@ def update(last_grid, rotation_angle=rotation_angle, step_width=step_width):
         physarum.rotate(rotation_angle)
         if physarum.can_move(physarum.position):
             physarum.move(step_width)
+        else:
+            physarum.rotate(180)
+            if physarum.can_move(physarum.position):
+                physarum.move(step_width)
     return grid
 
 
@@ -103,7 +100,6 @@ def animate(*args):
     grid = update(grid, rotation_angle, step_width)
     im.set_array(grid)
     # multiply pixels by trail
-    im.set_array(grid)
     return im,
 ani = animation.FuncAnimation(fig, animate, interval=1, blit=True)
 # show colorbar
