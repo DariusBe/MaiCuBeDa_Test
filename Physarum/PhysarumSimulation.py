@@ -20,8 +20,17 @@ class PhysarumSimulation:
         self.sensor_width = sensor_width
         self.grid = np.zeros((grid_size, grid_size))
         self.trail = np.zeros((grid_size, grid_size))
-        self.penalty_map = xyzFileToImg(filepath, self.grid_size)
+        self.sensor_map = np.zeros((grid_size, grid_size))
+        self.penalty_map = self.createPenaltyMap() #xyzFileToImg(filepath, self.grid_size)
         self.population = []
+
+    # if no file is given, create a blank grid
+    def createPenaltyMap(self):
+        # randomly create few spots with aggregated trail
+        penalty_map = np.random.poisson(0.01, (grid_size, grid_size))
+        # randomize values > 0 in trail to values between 0.1 and 1.0
+        penalty_map = np.where(penalty_map > 0, np.random.uniform(0.1, 1.0, penalty_map.shape), penalty_map)
+        return penalty_map
 
     def populate(self):
         population = []
@@ -45,19 +54,25 @@ class PhysarumSimulation:
             grid[pos_x, pos_y] = 1
 
             # attempt to move
-            if physarum.can_move(self.grid, physarum.position, self.step_width):
+            if physarum.can_move(self.trail, physarum.position, self.step_width):
                 physarum.move(self.step_width, self.grid_size)
+                # get new position
                 physarum.rotate(self.rotation_angle)
-                # leave trail
+                pos_x, pos_y = pos_to_grid(physarum.position, self.grid_size)
                 self.trail[pos_x, pos_y] = 1
             else:
                 rand_heading = np.random.choice(np.arange(0, 360, self.rotation_angle))
                 physarum.heading = rand_heading
 
-            # sense
-            sensor_values = physarum.sense(self.penalty_map)
-            print(sensor_values)
 
+            # sense
+            self.sensor_map = np.zeros((self.grid_size, self.grid_size))
+            self.sensor_map = physarum.showSensorPositions(self.sensor_map)
+
+            sensor_values = physarum.sense(self.trail + self.penalty_map)
+
+            # apply attraction rules
+            physarum.attraction_rules(self.step_width, self.grid_size, sensor_values)
         return grid
     
     def runSimulation(self, interval):
@@ -74,9 +89,10 @@ class PhysarumSimulation:
 
         def animate(*args):
             global grid
-            global rotation_angle
             trail_decay = decay_slider.val
             self.trail = self.update(self.trail) * trail_decay
+
+
             im.set_array(self.trail + self.penalty_map)
             return im,
 
@@ -87,15 +103,15 @@ class PhysarumSimulation:
         
 
 
-filepath = "Physarum/geo_data/dgm_33250-5889.xyz"
-grid_size = 50
-trail_decay = 0.95
-population = 1
+filepath = "Physarum/geo_data/dgm_33250-5888.xyz"
+grid_size = 250
+trail_decay = 0.9
+population = 1000
 rotation_angle = 22.5
-step_width = 1.0
+step_width = 1
 sensor_distance = 9
-sensor_angle = 22.5
+sensor_angle = 45
 sensor_width = 1
 
 simulation = PhysarumSimulation(population, filepath, rotation_angle, sensor_distance, sensor_angle, sensor_width, step_width, grid_size, trail_decay)
-simulation.runSimulation(100)
+simulation.runSimulation(1)
