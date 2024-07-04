@@ -21,7 +21,7 @@ class PhysarumSimulation:
         self.grid = np.zeros((grid_size, grid_size))
         self.trail = np.zeros((grid_size, grid_size))
         self.sensor_map = np.zeros((grid_size, grid_size))
-        self.penalty_map = xyzFileToImg(filepath, self.grid_size, 3)
+        self.penalty_map = xyzFileToImg(filepath, self.grid_size, 1)
         self.oat_map = self.createOatMap()
         self.population = []
 
@@ -29,7 +29,7 @@ class PhysarumSimulation:
     def createOatMap(self):
         oatMap = np.zeros((self.grid_size, self.grid_size))
         # create a few circles with random radius and position
-        for i in range(3):
+        for i in range(10):
             radius = np.random.randint(4, 8)
             x = np.random.randint(self.grid_size//2, self.grid_size)
             y = np.random.randint(0, self.grid_size)
@@ -90,9 +90,10 @@ class PhysarumSimulation:
         ax.set_xlim(0, self.grid_size)
         ax.set_ylim(0, self.grid_size)
         # stack the images
-        #im1 = ax.imshow(self.oat_map, cmap='gray', origin='lower')
-        #m2 = ax.imshow(self.trail, cmap='gray', origin='lower')
-        im = ax.imshow(self.trail, cmap='cividis', origin='lower')
+        im = ax.imshow(self.trail-self.penalty_map, cmap='Spectral_r', origin='lower')
+        # stack second image for the trail
+        im2 = ax.imshow(self.trail, cmap='plasma', origin='lower')
+
 
         # create sliders
         decay_slider = Slider(plt.axes([0.5, 0.01, 0.25, 0.02]), 'Penalty Decay Rate', 0.5, 1.0, valinit=self.trail_decay)
@@ -115,8 +116,9 @@ class PhysarumSimulation:
 
             # diffuse the trail using cv2.dilate
             self.trail += self.oat_map
-            self.trail = self.update(self.trail) * self.trail_decay
-            im.set_array(self.trail)
+            # penalize the trail
+            self.trail = self.update(self.trail-self.penalty_map) * self.trail_decay
+            im.set_array(self.trail-self.penalty_map)
             return im,
 
         ani = animation.FuncAnimation(fig, animate, cache_frame_data=False, interval=interval, blit=True)
@@ -126,10 +128,10 @@ class PhysarumSimulation:
         
 
 
-filepath = "Physarum/geo_data/dgm_33250-5889.xyz"
-grid_size = 100
+filepath = "geo_data/dgm_33250-5888.xyz"
+grid_size = 250
 trail_decay = 0.9
-population = 250
+population = 750
 rotation_angle = 22.5
 step_width = 1
 sensor_distance = 10

@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-filepath = "Physarum/geo_data/dgm_33250-5888.xyz"
+filepath = "geo_data/dgm_33250-5888.xyz"
 
 # read the XYZ point cloud as heightmap
 topo = np.loadtxt(filepath, delimiter=',')
